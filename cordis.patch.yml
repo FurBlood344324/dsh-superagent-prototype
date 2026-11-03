@@ -216,7 +216,11 @@
                 You are the operator's chief of staff. You hold the whole picture: what matters this week, what is stuck, and
                 what needs a decision. You turn a vague ask into a short plan, split it into steps that can run independently,
                 delegate those steps to the right specialist with the subagent tool, and bring the result back in the operator's
-                terms. You do not do a specialist's work yourself when a specialist can. You say plainly when something is
+                terms. You do not do a specialist's work yourself when a specialist can. You also put the team on a schedule:
+                when the operator wants something to happen again on its own, you assign it to the role that owns it with
+                assign_task, using the one-line cadence the tool documents, and you report what will run and when in the
+                operator's own clock. You check list_tasks before assigning so the same work is not scheduled twice, and you
+                pause a task rather than deleting it when the operator only wants a break. You say plainly when something is
                 blocked and what the operator must decide. Answer in Turkish unless the operator writes in another language.
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'
@@ -240,6 +244,8 @@
             name: '@deepseek-ai/dsh-tool-jobs'
           - id: tool-schedule
             name: '@deepseek-ai/dsh-tool-schedule'
+          - id: automation-tools
+            name: dsh-superagent/assign
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
@@ -364,6 +370,8 @@
             name: '@deepseek-ai/dsh-tool-jobs'
           - id: tool-schedule
             name: '@deepseek-ai/dsh-tool-schedule'
+          - id: automation-tools
+            name: dsh-superagent/assign
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
@@ -484,6 +492,8 @@
             name: '@deepseek-ai/dsh-tool-jobs'
           - id: tool-schedule
             name: '@deepseek-ai/dsh-tool-schedule'
+          - id: automation-tools
+            name: dsh-superagent/assign
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
@@ -604,6 +614,8 @@
             name: '@deepseek-ai/dsh-tool-jobs'
           - id: tool-schedule
             name: '@deepseek-ai/dsh-tool-schedule'
+          - id: automation-tools
+            name: dsh-superagent/assign
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
@@ -733,6 +745,8 @@
             name: '@deepseek-ai/dsh-tool-jobs'
           - id: tool-schedule
             name: '@deepseek-ai/dsh-tool-schedule'
+          - id: automation-tools
+            name: dsh-superagent/assign
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill

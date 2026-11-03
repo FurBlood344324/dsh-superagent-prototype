@@ -21,6 +21,8 @@ export async function apply(ctx: Context, config: DeploymentConfig): Promise<voi
   const runtime = new Runtime(ctx, machine, restart)
   ctx.effect(() => async () => { await runtime.stop() })
   await runtime.ready
+  // Automated tasks do not wait for setup: a role on a schedule needs no repository, and the tools start working with the panel.
+  runtime.tasks.start()
   // Roles live in the state directory, not in the patch: the Role Maker writes one file and the agent-preset service takes
   // it while the Host runs, so a new role needs neither a rebuild nor a restart.
   ;(ctx as unknown as { inject(names: string[], callback: (child: { effect(run: () => () => void): void }) => void): void })

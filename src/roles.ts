@@ -55,6 +55,8 @@ export const ROLE_TOOLSET: readonly RoleRow[] = [
   { id: 'tool-fs-search', name: '@deepseek-ai/dsh-tool-fs-search', config: { sampleOverCapGlobResults: false } },
   { id: 'tool-jobs', name: '@deepseek-ai/dsh-tool-jobs' },
   { id: 'tool-schedule', name: '@deepseek-ai/dsh-tool-schedule' },
+  // The bundle's own tools: a role can be handed recurring work, and can inspect or stop what it was given.
+  { id: 'automation-tools', name: 'dsh-superagent/assign' },
   { id: 'skill-filesystem', name: '@deepseek-ai/dsh-skill-filesystem' },
   { id: 'tool-skill', name: '@deepseek-ai/dsh-tool-skill' },
   { id: 'command-goal', name: '@deepseek-ai/dsh-command-goal' },

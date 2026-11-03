@@ -38,6 +38,23 @@ it('says which role files the Host refused, instead of hiding them', async () =>
   server.rolesProblems = []
 })
 
+it('lists the automated tasks a role runs and lets the operator pause one', async () => {
+  server.tasks = [{ id: 'morning-brief', title: 'Morning brief', preset: 'superagent-researcher',
+    prompt: 'Read the open issues and write a short brief.', cadence: { kind: 'daily', time: '09:00' }, enabled: true,
+    createdAt: '2026-11-03T09:00:00.000Z', nextRun: '2026-11-04T06:00:00.000Z', nextRunLocal: '04.11.2026 09:00',
+    cadenceText: 'daily at 09:00', runs: 2 }]
+  await mount(en)
+  await click('Agents')
+  // The card names the role the task runs under, so the operator knows who does the work.
+  expect(text()).toContain('Morning brief')
+  expect(text()).toContain('superagent-researcher')
+  expect(text()).toContain('daily at 09:00')
+  await click('Pause')
+  expect(server.controlled).toEqual([{ id: 'morning-brief', action: 'pause' }])
+  server.tasks = []
+  server.controlled = []
+})
+
 it('words every roster agent in both languages', () => {
   const dictionaries = [zh, en] as unknown as Record<string, string>[]
   for (const agent of ROSTER) {

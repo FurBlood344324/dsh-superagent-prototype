@@ -29,6 +29,7 @@ import { evalsHealth } from './views/overview.ts'
 import { TextCache } from './cache.ts'
 import { Effects } from './effects.ts'
 import { RoleRegistry, type RegistryContext } from './roles.ts'
+import { Automation } from './automation.ts'
 import { Prompts } from './prompts.ts'
 import { registerHttp, type HttpHost } from './http.ts'
 import type { LinkTarget } from './views/records.ts'
@@ -73,6 +74,8 @@ export class Runtime extends Service implements SourceHost {
   readonly passes: Passes
   /** Roles the Role Maker wrote into the state directory's roles folder, registered as live agent presets. */
   readonly roles: RoleRegistry
+  /** The operator's automated tasks: a role, a prompt, and when to run it. */
+  readonly tasks: Automation
   readonly ready: Promise<void>
   private readonly board = new HealthBoard()
   private readonly runtimeHealth = this.board.claim('runtime', { state: 'starting', detail: '' })
@@ -167,6 +170,21 @@ export class Runtime extends Service implements SourceHost {
         get github() { return runtime.context({ kind: 'github', health: ['github'] }) },
         requestPass: () => { passes.request() }, sendReplies: () => outbox.sent(),
         quietly: run => { this.quiet++; try { return run() } finally { this.quiet-- } } }
+      this.tasks = new Automation({
+        sessions: {
+          create: request => ctx.sessionController.create({ cwd: request.cwd, agentPreset: request.agentPreset }),
+          prompt: (request, signal) => ctx.sessionController.prompt({ requestId: request.requestId as never,
+            sessionId: request.sessionId as never, mode: request.mode, content: request.content as never }, signal),
+        },
+        store,
+        cwd: machine.stateDir,
+        logger: ctx.logger,
+        closing: () => this.closing(),
+        presets: async () => {
+          const presets = ctx.get('agentPresets') as { list(): Promise<readonly { id: string }[]> } | undefined
+          return (await presets?.list() ?? []).map(row => row.id)
+        },
+      })
       this.ready = this.initialize()
     } catch (error) {
       // Release the database and state lock if initialization fails so an in-process restart can reacquire them.
@@ -223,7 +241,8 @@ export class Runtime extends Service implements SourceHost {
   private httpHost(): HttpHost {
     const runtime = this
     const { store, sources, prompts, sessions, settings, engine, executor, health, machine, masterId, ready, sourceLinks, setup, passes } = this
-    return { store, sources, prompts, sessions, settings, engine, executor, health, machine, masterId, ready, sourceLinks, roles: this.roles,
+    return { store, sources, prompts, sessions, settings, engine, executor, health, machine, masterId, ready, sourceLinks,
+      roles: this.roles, tasks: this.tasks,
       get deployment() { return setup.deployment },
       get setupProblem() { return setup.problem }, get feishuProblem() { return setup.feishuProblem },
       configured: () => setup.configured(), links: () => runtime.links(), ticketEnvironment: ticket => runtime.ticketEnvironment(ticket),
@@ -232,7 +251,7 @@ export class Runtime extends Service implements SourceHost {
   /** Idempotent stop; concurrent or repeated calls share the same shutdown promise. */
   stop(): Promise<void> { return this.stopping ??= this.shutdown() }
   private async shutdown(): Promise<void> {
-    this.closingFlag = true; const passes = this.passes.stop(); this.stopped.abort()
+    this.closingFlag = true; const passes = this.passes.stop(); this.stopped.abort(); this.tasks.stop()
     try {
       this.assessor.stop()
       const ids = [this.masterId, ...this.store.tickets.list().map(ticket => workerSessionId(ticket.id))]

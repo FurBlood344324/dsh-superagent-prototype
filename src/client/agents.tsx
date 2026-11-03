@@ -23,6 +23,9 @@ export function AgentsPage({ startAgent }: { startAgent: (preset: string) => voi
   const { data } = usePoll(() => call('GET roles', {}), [])
   const added = data?.roles ?? []
   const broken = data?.problems ?? []
+  // Tasks the roles run on their own schedule; the chief of staff assigns them in conversation, this tab pauses them.
+  const { data: scheduled } = usePoll(() => call('GET tasks', {}), [])
+  const tasks = scheduled?.tasks ?? []
   return <section className="dt-agents" aria-label={t('tab.agents')}>
     <p className="dt-hint">{t('agentsIntro')}</p>
     <ul className="dt-agent-grid">
@@ -66,6 +69,31 @@ export function AgentsPage({ startAgent }: { startAgent: (preset: string) => voi
     </ul>
     {broken.length > 0 && <p className="dt-hint">{t('agent.broken')}:{' '}
       {broken.map(problem => problem.file + ': ' + problem.message).join(' | ')}</p>}
+    <h3 className="dt-block-title">{t('tasks.head')}</h3>
+    {tasks.length === 0 ? <p className="dt-hint">{t('tasks.none')}</p> : <ul className="dt-agent-grid">
+      {tasks.map(task => <li key={task.id} className="dt-agent-card">
+        <div className="dt-agent-head">
+          <span className="dt-agent-avatar" style={tint(task.enabled ? 152 : 0)} aria-hidden="true">
+            <Icon name="clock" size={18} />
+          </span>
+          <div className="dt-agent-id">
+            <h3 className="dt-agent-name">{task.title}</h3>
+            <span className="dt-agent-role">{task.preset}</span>
+          </div>
+        </div>
+        <p className="dt-agent-blurb">{task.cadenceText} · {task.nextRunLocal} · {task.runs} {t('task.runs')}</p>
+        <div className="dt-agent-foot">
+          <Button variant="outline" size="sm"
+            onClick={() => void call('POST tasks/:id/control', { id: task.id, body: { action: task.enabled ? 'pause' : 'resume' } })}>
+            {task.enabled ? t('task.pause') : t('task.resume')}
+          </Button>
+          <Button size="sm"
+            onClick={() => void call('POST tasks/:id/control', { id: task.id, body: { action: 'delete' } })}>
+            {t('task.delete')}
+          </Button>
+        </div>
+      </li>)}
+    </ul>}
     <p className="dt-hint">{t('agentsFoot')}</p>
   </section>
 }

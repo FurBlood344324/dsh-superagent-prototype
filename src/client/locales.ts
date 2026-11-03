@@ -139,6 +139,12 @@ const TEXT = {
   'agent.roleMaker.blurb': ['按你的说法设计一个新角色：写人设、定名字，落成文件后当场生效。', 'Designs a new role from your description: its character, its name, a file that takes effect at once.'],
   'agent.added': ['新角色', 'Added role'],
   'agent.broken': ['角色文件没能加载', 'A role file did not load'],
+  'tasks.head': ['自动任务', 'Automated tasks'],
+  'tasks.none': ['还没有自动任务。和团队说一声，让它给某个角色安排一个。', 'No automated task yet. Ask the team to assign one to a role.'],
+  'task.pause': ['暂停', 'Pause'],
+  'task.resume': ['继续', 'Resume'],
+  'task.delete': ['删除', 'Delete'],
+  'task.runs': ['次运行', 'runs'],
   // Overview
   sourceError: ['{source} 来源异常', '{source} Source failing'],
   needsYouNone: ['没有待处理的工单。', 'No pending Tickets.'],
