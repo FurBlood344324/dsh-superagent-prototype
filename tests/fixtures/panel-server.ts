@@ -106,6 +106,8 @@ export interface PanelServer {
   pending: number
   form?: ConfigForm<Record<string, unknown>> | undefined
   opened: string[]
+  /** Agent presets the Agents tab asked the Host to start a Session under. */
+  started: string[]
   dropped: DroppedReply[]
   failing: Extract<Problem, { kind: 'outgoing' }>['outgoing'][]
 }
@@ -247,7 +249,7 @@ function initial(): PanelServer {
     en: 'Feishu message' } }
   const defaults = { revision: 0, previousRevision: null, savedAt: '', source: 'defaults' }
   return {
-    health: {}, down: false, pending: 0, opened: [], requests: [], misuse: [], queued: new Set(), dropped: [], failing: [],
+    health: {}, down: false, pending: 0, opened: [], started: [], requests: [], misuse: [], queued: new Set(), dropped: [], failing: [],
     setup: { machine: MACHINE, problem: null, feishuProblem: null,
       accounts: { repository: 'acme/widgets', agent: 'agent-bot', feishu: { appId: 'cli_bot', brand: 'feishu', botId: 'ou_bot',
         name: 'Widgets Bot' } } },

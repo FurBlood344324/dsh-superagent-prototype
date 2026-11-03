@@ -12,11 +12,12 @@ Opening the panel answers three questions, in this order:
 
 ## Tabs
 
-The tabs follow the workflow: **Overview**, **Source**, **Trigger**, **Eval**, **Execution**, and **Settings**. Until repository and account setup succeeds, Overview shows what is missing and links to the relevant setting.
+The tabs follow the workflow: **Overview**, **Agents**, **Source**, **Trigger**, **Eval**, **Execution**, and **Settings**. Until repository and account setup succeeds, Overview shows what is missing and links to the relevant setting.
 
 | Tab | Shows |
 | --- | --- |
 | Overview | Tickets needing action, system problems, activity counts for the last 24 hours, and Executor load. Each block links to its detailed page |
+| Agents | The operator's standing roles: chief of staff, researcher, engineer and editor. Each card starts a new Session under that role's agent preset, so the role can be talked to directly, and the same presets are offered when a Session starts anywhere else |
 | Source | Source state, setup problems and non-zero counts. Filtered Triggers and dropped messages cover the same 24-hour window as Overview |
 | Trigger | Threads filtered by Subscribed, Evaluating, New Triggers in 24 h, or All Threads. Each Thread shows its Triggers newest first, Decisions and Subscriptions |
 | Eval | Decisions with their reason and matched rules |
