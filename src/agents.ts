@@ -11,7 +11,7 @@ export interface RosterAgent {
   /** Copy key under `agent.<key>.` in the panel dictionaries. */
   readonly key: string
   /** Icon name from `controls.tsx`. */
-  readonly icon: 'briefcase' | 'search' | 'code' | 'pen'
+  readonly icon: 'briefcase' | 'search' | 'code' | 'pen' | 'user'
   /** Hue of the avatar tint, in degrees; the theme supplies the saturation and lightness. */
   readonly hue: number
 }
@@ -22,4 +22,6 @@ export const ROSTER: readonly RosterAgent[] = [
   { id: 'superagent-researcher', key: 'researcher', icon: 'search', hue: 205 },
   { id: 'superagent-engineer', key: 'engineer', icon: 'code', hue: 152 },
   { id: 'superagent-editor', key: 'editor', icon: 'pen', hue: 282 },
+  // The one role that builds the others; the chief of staff hands role requests to it.
+  { id: 'superagent-role-maker', key: 'roleMaker', icon: 'user', hue: 340 },
 ]

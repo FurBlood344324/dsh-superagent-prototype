@@ -134,6 +134,11 @@ const TEXT = {
   'agent.editor.name': ['编辑', 'Editor'],
   'agent.editor.role': ['写作', 'Writing'],
   'agent.editor.blurb': ['统一语气，砍掉不承重的句子，保留结构和你原本的意思。', 'Keeps one voice, cuts what carries no meaning and preserves the structure and your intent.'],
+  'agent.roleMaker.name': ['角色工匠', 'Role Maker'],
+  'agent.roleMaker.role': ['搭队伍', 'Team building'],
+  'agent.roleMaker.blurb': ['按你的说法设计一个新角色：写人设、定名字，落成文件后当场生效。', 'Designs a new role from your description: its character, its name, a file that takes effect at once.'],
+  'agent.added': ['新角色', 'Added role'],
+  'agent.broken': ['角色文件没能加载', 'A role file did not load'],
   // Overview
   sourceError: ['{source} 来源异常', '{source} Source failing'],
   needsYouNone: ['没有待处理的工单。', 'No pending Tickets.'],

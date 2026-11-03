@@ -17,6 +17,27 @@ it('offers one card per roster agent and starts a Session under its preset', asy
   expect(server.started).toEqual([ROSTER[0]!.id])
 })
 
+it('shows a role the Role Maker wrote and starts its Session by the preset id it registered', async () => {
+  server.roles = [{ id: 'superagent-analyst', name: 'Analyst', description: 'Turns numbers into one decision.', icon: 'search', hue: 12,
+    file: 'analyst.json' }]
+  await mount(en)
+  await click('Agents')
+  expect(all('.dt-agent-card')).toHaveLength(ROSTER.length + 1)
+  // The card names the preset id, because that is what the chief of staff passes when it delegates to the role.
+  expect(text()).toContain('superagent-analyst')
+  await click(all('.dt-agent-card button').at(-1)!)
+  expect(server.started).toEqual(['superagent-analyst'])
+  server.roles = []
+})
+
+it('says which role files the Host refused, instead of hiding them', async () => {
+  server.rolesProblems = [{ file: 'broken.json', message: 'persona: Too small' }]
+  await mount(en)
+  await click('Agents')
+  expect(text()).toContain('broken.json')
+  server.rolesProblems = []
+})
+
 it('words every roster agent in both languages', () => {
   const dictionaries = [zh, en] as unknown as Record<string, string>[]
   for (const agent of ROSTER) {
