@@ -195,11 +195,12 @@
 
     # The role agents the panel's Agents tab starts (src/agents.ts). Each one is an ordinary Session preset with the
     # same toolset as the shipped `standard` preset: shell, fs, search, jobs, schedules, goals, plan mode, compaction,
-    # subagents (spawn, fork, list), the workflow engine, ask-user, todo, web and present. The two plugin admin rows
-    # stay out on purpose: they are disabled in `standard` too, and a role agent should not reconfigure the profile.
-    # Host-scope tools (vault memory, bulk_read, cordis inspect) reach every Session whatever the preset, so they are
-    # not repeated here. The chief of staff may delegate to the other three by preset; the other three spawn
-    # standard agents.
+    # subagents (spawn, fork, list), the workflow engine, ask-user, todo, web and present. On top of that the profile's
+    # PTC row, so a role calls its tools from one code block like any other Session. The two plugin admin rows stay out
+    # on purpose: they are disabled in `standard` too, and a role agent should not reconfigure the profile. Host-scope
+    # tools reach every Session whatever the preset, so they are not repeated here: the vault tools register without a
+    # restriction, bulk_read hides itself only from `standard`, and cordis inspect comes from the Host. The chief of
+    # staff may delegate to the other three by preset; the other three spawn standard agents.
     - id: preset-superagent-chief-of-staff
       name: '@deepseek-ai/dsh-agent-preset'
       config:

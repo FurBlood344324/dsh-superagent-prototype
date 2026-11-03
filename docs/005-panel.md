@@ -17,7 +17,7 @@ The tabs follow the workflow: **Overview**, **Agents**, **Source**, **Trigger**,
 | Tab | Shows |
 | --- | --- |
 | Overview | Tickets needing action, system problems, activity counts for the last 24 hours, and Executor load. Each block links to its detailed page |
-| Agents | The operator's standing roles: chief of staff, researcher, engineer and editor. Each card starts a new Session under that role's agent preset, so the role can be talked to directly, and the same presets are offered when a Session starts anywhere else. Every role carries the toolset of the shipped `standard` preset (shell, files, search, jobs, schedules, goals, plan mode, subagents, the workflow engine, web and present) minus the two plugin admin rows, and the host's own tools reach it like any other Session |
+| Agents | The operator's standing roles: chief of staff, researcher, engineer and editor. Each card starts a new Session under that role's agent preset, so the role can be talked to directly, and the same presets are offered when a Session starts anywhere else. Every role carries the toolset of the shipped `standard` preset (shell, files, search, jobs, schedules, goals, plan mode, subagents, the workflow engine, web and present) minus the two plugin admin rows, plus the profile's PTC row, and the host's own tools (vault memory, bulk_read, cordis inspect) reach it like any other Session |
 | Source | Source state, setup problems and non-zero counts. Filtered Triggers and dropped messages cover the same 24-hour window as Overview |
 | Trigger | Threads filtered by Subscribed, Evaluating, New Triggers in 24 h, or All Threads. Each Thread shows its Triggers newest first, Decisions and Subscriptions |
 | Eval | Decisions with their reason and matched rules |
