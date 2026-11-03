@@ -92,11 +92,15 @@ it('declares one role preset per roster agent, each with its own persona', async
   expect(subagent.allowedAgentPresets).toEqual(ROSTER.filter(agent => agent.key !== 'chiefOfStaff').map(agent => agent.id))
 })
 
-/** The row ids the shipped `standard` preset carries, minus the two plugin admin rows it disables. */
+/**
+ * The row ids the shipped `standard` preset carries, minus the two plugin admin rows it disables, plus the profile's
+ * PTC presentation row: the operator asks for tools in one code block everywhere, and a role Session should not be the
+ * one place where every call is a separate round trip.
+ */
 const ROLE_TOOLSET = ['persona', 'agent-instructions', 'time-context', 'tool-bash', 'tool-pwsh', 'tool-fs', 'tool-fs-search', 'tool-jobs',
   'tool-schedule', 'skill-filesystem', 'tool-skill', 'command-goal', 'tool-goal', 'planning', 'plan-mode', 'compaction', 'compaction-basic',
   'command-compact', 'tool-result-pruner', 'delegation', 'tool-subagent-control', 'tool-subagent-list-agents', 'tool-subagent',
-  'tool-subagent-fork', 'workflow-ptc', 'tool-workflow', 'tool-ask-user', 'tool-todo', 'tool-web', 'present']
+  'tool-subagent-fork', 'workflow-ptc', 'tool-workflow', 'tool-ask-user', 'tool-todo', 'tool-web', 'tool-presentation', 'present']
 
 it('gives every role preset the working toolset of the shipped standard preset', async () => {
   const rows = await patched()
