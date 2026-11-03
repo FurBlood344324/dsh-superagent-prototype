@@ -194,8 +194,12 @@
 
 
     # The role agents the panel's Agents tab starts (src/agents.ts). Each one is an ordinary Session preset with the
-    # working toolset, so the operator can also pick it in the Session preset chip or delegate to it by preset id.
-    # The chief of staff may delegate to the other three by preset; the other three spawn standard agents.
+    # same toolset as the shipped `standard` preset: shell, fs, search, jobs, schedules, goals, plan mode, compaction,
+    # subagents (spawn, fork, list), the workflow engine, ask-user, todo, web and present. The two plugin admin rows
+    # stay out on purpose: they are disabled in `standard` too, and a role agent should not reconfigure the profile.
+    # Host-scope tools (vault memory, bulk_read, cordis inspect) reach every Session whatever the preset, so they are
+    # not repeated here. The chief of staff may delegate to the other three by preset; the other three spawn
+    # standard agents.
     - id: preset-superagent-chief-of-staff
       name: '@deepseek-ai/dsh-agent-preset'
       config:
@@ -233,10 +237,27 @@
               sampleOverCapGlobResults: false
           - id: tool-jobs
             name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Explore with non-mutating reads, searches and checks, then present the plan through exit_plan_mode. Do not edit files, change configuration, commit, or run commands that rewrite tracked files before the plan is approved. A conversational agreement approves nothing: fold the confirmed decision into the plan and submit it again. Make the plan decision-complete: the goal and success criteria, the changes grouped by area, the risks, and what still needs a decision. Make exit_plan_mode the only tool call in that response.
           - id: compaction
             name: cordis:group
             group: true
@@ -262,15 +283,29 @@
             config:
               - id: tool-subagent-control
                 name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent-list-agents
+                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
               - id: tool-subagent
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
                   provider: spawn
                   toolName: subagent
+                  modelSelectionSettings: true
                   allowedAgentPresets:
                     - superagent-researcher
                     - superagent-engineer
                     - superagent-editor
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
           - id: tool-ask-user
             name: '@deepseek-ai/dsh-tool-ask-user'
           - id: tool-todo
@@ -321,10 +356,27 @@
               sampleOverCapGlobResults: false
           - id: tool-jobs
             name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Explore with non-mutating reads, searches and checks, then present the plan through exit_plan_mode. Do not edit files, change configuration, commit, or run commands that rewrite tracked files before the plan is approved. A conversational agreement approves nothing: fold the confirmed decision into the plan and submit it again. Make the plan decision-complete: the goal and success criteria, the changes grouped by area, the risks, and what still needs a decision. Make exit_plan_mode the only tool call in that response.
           - id: compaction
             name: cordis:group
             group: true
@@ -350,12 +402,26 @@
             config:
               - id: tool-subagent-control
                 name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent-list-agents
+                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
               - id: tool-subagent
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
                   provider: spawn
                   toolName: subagent
+                  modelSelectionSettings: true
                   agentPreset: standard
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
           - id: tool-ask-user
             name: '@deepseek-ai/dsh-tool-ask-user'
           - id: tool-todo
@@ -406,10 +472,27 @@
               sampleOverCapGlobResults: false
           - id: tool-jobs
             name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Explore with non-mutating reads, searches and checks, then present the plan through exit_plan_mode. Do not edit files, change configuration, commit, or run commands that rewrite tracked files before the plan is approved. A conversational agreement approves nothing: fold the confirmed decision into the plan and submit it again. Make the plan decision-complete: the goal and success criteria, the changes grouped by area, the risks, and what still needs a decision. Make exit_plan_mode the only tool call in that response.
           - id: compaction
             name: cordis:group
             group: true
@@ -435,12 +518,26 @@
             config:
               - id: tool-subagent-control
                 name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent-list-agents
+                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
               - id: tool-subagent
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
                   provider: spawn
                   toolName: subagent
+                  modelSelectionSettings: true
                   agentPreset: standard
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
           - id: tool-ask-user
             name: '@deepseek-ai/dsh-tool-ask-user'
           - id: tool-todo
@@ -491,10 +588,27 @@
               sampleOverCapGlobResults: false
           - id: tool-jobs
             name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Explore with non-mutating reads, searches and checks, then present the plan through exit_plan_mode. Do not edit files, change configuration, commit, or run commands that rewrite tracked files before the plan is approved. A conversational agreement approves nothing: fold the confirmed decision into the plan and submit it again. Make the plan decision-complete: the goal and success criteria, the changes grouped by area, the risks, and what still needs a decision. Make exit_plan_mode the only tool call in that response.
           - id: compaction
             name: cordis:group
             group: true
@@ -520,12 +634,26 @@
             config:
               - id: tool-subagent-control
                 name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent-list-agents
+                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
               - id: tool-subagent
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
                   provider: spawn
                   toolName: subagent
+                  modelSelectionSettings: true
                   agentPreset: standard
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
           - id: tool-ask-user
             name: '@deepseek-ai/dsh-tool-ask-user'
           - id: tool-todo
