@@ -13,7 +13,7 @@ it('offers one card per roster agent and starts a Session under its preset', asy
   await click('Agents')
   expect(all('.dt-agent-card')).toHaveLength(ROSTER.length)
   expect(text()).toContain('Chief of Staff')
-  await click('Start a Session')
+  await click(all('.dt-agent-card button')[0]!)
   expect(server.started).toEqual([ROSTER[0]!.id])
 })
 

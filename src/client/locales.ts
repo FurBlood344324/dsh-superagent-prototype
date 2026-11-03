@@ -121,6 +121,7 @@ const TEXT = {
   agentsIntro: ['每个智能体都是一个固定的角色；开始后在新 Session 里和它对话。', 'Each agent is a standing role; starting one opens a new Session you talk to it in.'],
   agentsFoot: ['每个智能体在独立 Session 里工作，历史留在左侧会话列表里。', 'Each agent works in its own Session; its history stays in your Session list.'],
   'agent.start': ['开始对话', 'Start a Session'],
+  'agent.startAgent': ['和{agent}开始对话', 'Start a Session with {agent}'],
   'agent.chiefOfStaff.name': ['幕僚长', 'Chief of Staff'],
   'agent.chiefOfStaff.role': ['统筹', 'Orchestration'],
   'agent.chiefOfStaff.blurb': ['把优先级排好，把活拆开分给专才，再把结果收回来。', 'Keeps priorities straight, splits work, delegates to specialists and brings the result back.'],

@@ -29,7 +29,8 @@ export function AgentsPage({ startAgent }: { startAgent: (preset: string) => voi
         </div>
         <p className="dt-agent-blurb">{copy(t, agent.key, 'blurb')}</p>
         <div className="dt-agent-foot">
-          <Button variant="outline" size="sm" icon={<Icon name="message" size={14} />} onClick={() => startAgent(agent.id)}>
+          <Button variant="outline" size="sm" icon={<Icon name="message" size={14} />} aria-label={t('agent.startAgent', { agent: copy(t, agent.key, 'name') })}
+            onClick={() => startAgent(agent.id)}>
             {t('agent.start')}
           </Button>
         </div>
