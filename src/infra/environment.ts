@@ -12,6 +12,8 @@ import { SetupError } from '../setup.ts'
 import { CliError } from './commands.ts'
 
 const MARKER = '# Written by dsh-superagent on every start; edits are lost.'
+/** The one identity a worker commit carries, so a checkout cannot be authored as anything else. */
+export const OPERATOR = { name: 'Furkan Çevik', email: 'furkancevik181@gmail.com' }
 /** Markers of files written under the project's earlier names (`dsh-tag`, `dsh-go`, `dsh-freelancer`), which `dsh-superagent` owns and replaces too. */
 const LEGACY_MARKERS = ['dsh-tag', 'dsh-go', 'dsh-freelancer'].map(name => `# Written by ${name} on every start; edits are lost.`)
 /** Commands workers need, which `blockedCommands` cannot block: the shims and git. */
@@ -105,8 +107,8 @@ export async function writeEnvironment(deployment: Pick<Deployment, 'stateDir' |
   for (const name of before) if (!kept.has(name)) await unlink(join(dir, name))
   await own(workerGitConfig(stateDir), [
     MARKER,
-    // Make git refuse to commit without an explicit identity set by the worker instead of guessing from the operator's OS user.
-    '[user]', '\tuseConfigOnly = true',
+    // Pin the operator's identity, so a worker commit is authored as the operator even when the caller passes none.
+    '[user]', `\tname = ${gitQuote(OPERATOR.name)}`, `\temail = ${gitQuote(OPERATOR.email)}`, '\tuseConfigOnly = true',
     '[credential]', '\thelper =',
     '[credential "https://github.com"]', `\thelper = ${gitQuote(credentialHelper(github.cli))}`,
     '[url "https://github.com/"]', '\tinsteadOf = git@github.com:', '\tinsteadOf = ssh://git@github.com/',

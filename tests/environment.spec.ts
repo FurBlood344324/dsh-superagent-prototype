@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SENSITIVE_ENV_PATTERN, type SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
-import { GIT_LOCATION, agentVariables, credentialHelper, runAsWorker, verifyDirectory, withoutDirectory, workerBin, workerGitConfig, writeEnvironment }
+import { GIT_LOCATION, OPERATOR, agentVariables, credentialHelper, runAsWorker, verifyDirectory, withoutDirectory, workerBin, workerGitConfig, writeEnvironment }
   from '../src/infra/environment.ts'
 import { CliError } from '../src/infra/commands.ts'
 import { testDeployment } from './fixtures/deployment.ts'
@@ -69,6 +69,16 @@ describe('worker shims', () => {
     expect(readdirSync(workerBin(dir)).sort()).toEqual(['gh', 'lark-cli'])
     expect(readFileSync(workerGitConfig(dir), 'utf8')).toContain('Written by dsh-superagent')
   })
+  it("authors a worker commit as the deployment's account, whatever identity the caller passes", async () => {
+    await writeEnvironment(testDeployment({ stateDir: dir }), [])
+    // A worker commit names the GitHub account instead of whatever the caller supplies, and no caller identity is supplied here.
+    const env = workerEnv({ PATH: process.env.PATH, HOME: dir, GIT_AUTHOR_NAME: undefined, GIT_AUTHOR_EMAIL: undefined, ...agentVariables(dir) })
+    const git = async (...args: string[]): Promise<string> => (await exec('git', args, { cwd: dir, env })).stdout.trim()
+    await git('init', '-q', 'repo')
+    await git('-C', 'repo', 'commit', '--allow-empty', '-q', '-m', 'as the account')
+    expect(await git('-C', 'repo', 'log', '-1', '--format=%an <%ae>')).toBe(`${OPERATOR.name} <${OPERATOR.email}>`)
+    expect(await git('-C', 'repo', 'log', '-1', '--format=%cn <%ce>')).toBe(`${OPERATOR.name} <${OPERATOR.email}>`)
+  })
 })
 
 describe('agent git configuration', () => {
@@ -90,9 +100,8 @@ describe('agent git configuration', () => {
     await expect(git('config', 'core.abbrev')).rejects.toThrow()
     expect(env).not.toHaveProperty('GIT_AUTHOR_NAME')
     expect(env).not.toHaveProperty('GIT_COMMITTER_EMAIL')
-    await expect(git('-C', 'repo', 'commit', '--allow-empty', '-q', '-m', 'without identity')).rejects.toMatchObject({ stderr: expect.stringContaining('no email was given') })
-    await git('-C', 'repo', '-c', 'user.name=Alice', '-c', 'user.email=alice@example.com', 'commit', '--allow-empty', '-q', '-m', 'with identity')
-    expect(await git('-C', 'repo', 'log', '-1', '--format=%an <%ae> / %cn <%ce>')).toBe('Alice <alice@example.com> / Alice <alice@example.com>')
+    await git('-C', 'repo', 'commit', '--allow-empty', '-q', '-m', 'with identity')
+    expect(await git('-C', 'repo', 'log', '-1', '--format=%an <%ae> / %cn <%ce>')).toBe(`${OPERATOR.name} <${OPERATOR.email}> / ${OPERATOR.name} <${OPERATOR.email}>`)
   })
 })
 
