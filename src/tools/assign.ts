@@ -6,6 +6,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { z } from 'zod'
 import type { Automation } from '../app/automation.ts'
 import { describeCadence } from '../core/tasks.ts'
+import { jsonSchema } from '../tool-schema.ts'
 
 export const name = 'dsh-superagent/assign'
 export const inject = ['tools']
@@ -37,7 +38,7 @@ export function apply(ctx: Context): void {
   ctx.tools.register({
     name: 'assign_task',
     description: 'Assign a recurring automated task to a role agent. The task starts a fresh Session under that role at each run, so the role does its work on its own schedule. ' + WHEN_HELP,
-    parameters: z.toJSONSchema(Assignment),
+    parameters: jsonSchema(Assignment),
     output: toolbar,
     execute: async (args: unknown) => {
       const input = Assignment.parse(args)
@@ -48,7 +49,7 @@ export function apply(ctx: Context): void {
   ctx.tools.register({
     name: 'list_tasks',
     description: 'List the automated tasks this Host runs: id, role, cadence, next run in local time, last attempt and its Session.',
-    parameters: z.toJSONSchema(z.strictObject({})),
+    parameters: jsonSchema(z.strictObject({})),
     output: toolbar,
     execute: async () => ({ tasks: automation().list().map(task => ({ id: task.id, title: task.title, role: task.preset,
       when: describeCadence(task.cadence), nextRun: task.nextRunLocal, runs: task.runs, enabled: task.enabled,
@@ -57,7 +58,7 @@ export function apply(ctx: Context): void {
   ctx.tools.register({
     name: 'control_task',
     description: 'Pause, resume, run now, or delete one automated task by id.',
-    parameters: z.toJSONSchema(Control),
+    parameters: jsonSchema(Control),
     output: toolbar,
     execute: async (args: unknown) => {
       const input = Control.parse(args)

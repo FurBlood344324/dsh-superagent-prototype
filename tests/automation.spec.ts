@@ -138,6 +138,19 @@ it('mounts the task tools inside a role and reaches the Host scheduler through t
   await expect(orphan.list_tasks!.execute({})).rejects.toThrow(/not running/)
 })
 
+it('registers task tool parameters as plain JSON data', () => {
+  const definitions: { name: string, parameters: Record<string, unknown> }[] = []
+  apply({ tools: { register: (definition: never) => { definitions.push(definition) } }, get: () => undefined } as never)
+  expect(definitions.map(definition => definition.name)).toEqual(['assign_task', 'list_tasks', 'control_task'])
+  for (const definition of definitions) {
+    // DSH refuses a schema whose own keys are not all enumerable strings; zod's hidden `~standard` marker
+    // aborted every turn before the model call until the schema was projected to plain JSON.
+    expect(Reflect.ownKeys(definition.parameters).every(key => typeof key === 'string'
+      && Object.prototype.propertyIsEnumerable.call(definition.parameters, key))).toBe(true)
+    expect(JSON.parse(JSON.stringify(definition.parameters))).toEqual(definition.parameters)
+  }
+})
+
 it('shows the next run in the reader clock', async () => {
   const { automation } = await host()
   expect(taskView(await automation.assign(ASSIGN)).nextRunLocal).toBeTruthy()

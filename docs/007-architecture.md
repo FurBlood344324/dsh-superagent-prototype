@@ -296,6 +296,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/agents.ts` | The role agents the panel's Agents tab starts, in the order it shows them; each id is an agent preset the bundle patch declares |
 | `src/roles.ts` | A role file's schema and the plugin rows every role mounts: the persona first, then the shared toolset the Role Maker's roles and the patch's own roles both use |
 | `src/tools/assign.ts` | The automated-task tools (`assign_task`, `list_tasks`, `control_task`) mounted inside a role preset, reaching the Host scheduler through the Runtime service |
+| `src/tool-schema.ts` | `jsonSchema`: a zod schema as the plain JSON data a tool registers, without the non-enumerable marker zod v4 adds |
 | `src/deployment.ts` | The plugin `Config` and `Machine`; `resolveDeployment` and `resolveFeishuBot` read the repository and the accounts from the Source settings, each CLI run as Executor shells run it; `SETUP_FIELDS` lists the Source fields setup reads. The code names no person, account or organization |
 | `src/setup.ts` | Setup problems: `SetupError`, with a code, the place that fixes it and the English text the log, the main Session and the panel share |
 | `src/policy.ts` | The Policy: the settings schemas by block, the Policy version, the gate and Mandate revalidation |
