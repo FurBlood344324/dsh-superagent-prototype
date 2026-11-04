@@ -18,6 +18,8 @@ import type { Health } from '../sources/host.ts'
 import type { SourceRegistry } from '../sources/registry.ts'
 import type { RoleRegistry } from './roles.ts'
 import type { Automation } from './automation.ts'
+import type { LiveRuns } from './live.ts'
+import type { Inbox } from './inbox.ts'
 import type { Sessions } from './sessions.ts'
 import type { Store } from './store.ts'
 import type { TextCache } from './cache.ts'
@@ -46,6 +48,10 @@ export interface HttpHost {
   readonly roles: Pick<RoleRegistry, 'view'>
   /** Automated tasks: the scheduled assignments each role runs on its own. */
   readonly tasks: Pick<Automation, 'list' | 'control'>
+  /** Role Sessions the panel can watch while they work. */
+  readonly live: Pick<LiveRuns, 'view' | 'detail'>
+  /** The operator's inbox, written by `relay_to_user`. */
+  readonly inbox: Pick<Inbox, 'view' | 'markRead'>
   readonly masterId: string
   /** Resolves once startup finishes or setup determines what is still missing. */
   readonly ready: Promise<void>
@@ -216,6 +222,14 @@ function routes(runtime: HttpHost): Routes {
       const { action } = z.object({ action: z.enum(['pause', 'resume', 'run', 'delete']) }).parse(await body())
       return runtime.tasks.control(params.id, action)
     },
+    'GET runs': () => ({ runs: runtime.live.view() }),
+    'GET runs/:id': ({ params }) => {
+      const run = runtime.live.detail(params.id)
+      if (!run) throw new RouteError(404, 'Run not found')
+      return run
+    },
+    'GET inbox': () => runtime.inbox.view(),
+    'POST inbox/:id/read': ({ params }) => ({ read: runtime.inbox.markRead(params.id) }),
     'GET prompts': ({ query }) => { const { revision, offset } = PromptsQuery.parse(query); return promptsView(runtime, revision, offset) },
     'PUT prompts': async input => {
       const request = z.object({ config: z.unknown(), baseRevision: z.number().int().nonnegative() }).parse(await promptBody(input))

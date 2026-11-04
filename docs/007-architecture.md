@@ -296,6 +296,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/agents.ts` | The role agents the panel's Agents tab starts, in the order it shows them; each id is an agent preset the bundle patch declares |
 | `src/roles.ts` | A role file's schema and the plugin rows every role mounts: the persona first, then the shared toolset the Role Maker's roles and the patch's own roles both use |
 | `src/tools/assign.ts` | The automated-task tools (`assign_task`, `list_tasks`, `control_task`) mounted inside a role preset, reaching the Host scheduler through the Runtime service |
+| `src/tools/relay.ts` | `relay_to_user`: the host-scope tool that writes one short message into the operator's inbox and is the one channel an agent has to reach them |
 | `src/tool-schema.ts` | `jsonSchema`: a zod schema as the plain JSON data a tool registers, without the non-enumerable marker zod v4 adds |
 | `src/deployment.ts` | The plugin `Config` and `Machine`; `resolveDeployment` and `resolveFeishuBot` read the repository and the accounts from the Source settings, each CLI run as Executor shells run it; `SETUP_FIELDS` lists the Source fields setup reads. The code names no person, account or organization |
 | `src/setup.ts` | Setup problems: `SetupError`, with a code, the place that fixes it and the English text the log, the main Session and the panel share |
@@ -323,6 +324,8 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/app/runtime.ts` | The Runtime, the composition root, with its start and stop |
 | `src/app/automation.ts` | `Automation`: the task clock, the due check, and the run that opens a role Session |
 | `src/app/roles.ts` | `RoleRegistry`: the roles folder, registration through the agent-preset service, and the panel's `GET roles` view |
+| `src/app/live.ts` | `LiveRuns`: the role Sessions at work, a bounded feed of their steps, and the completion report each finished automated run hands to the chief of staff |
+| `src/app/inbox.ts` | `Inbox`: the messages the relay tool decided the operator must read, kept in the store so they outlive the Session that wrote them |
 | `src/app/setup.ts` | Setup, and `setupChanged`, whether a save changes a field setup reads |
 | `src/app/passes.ts` | Passes, the pass scheduler |
 | `src/app/outbox.ts` | The Outbox: the Engine's `Outbox` port, the receipts and the `reply` effects that send them |
@@ -384,7 +387,8 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/sources/admission-context.ts` | The bounded window an assessment starts from: the first pages of a Trigger's Thread, read through its kind, and the messages around the Trigger |
 | `src/sources/feishu-image.ts` | Reads a Feishu message's image as an attachment for the assessing Session |
 | `src/client/index.tsx` | The client plugin entry: the sidebar entry, the main panel and the page in DeepSeek Harness's Plugin Manager |
-| `src/client/agents.tsx` | The Agents tab: one card per roster agent, starting a Session under that agent's preset |
+| `src/client/agents.tsx` | The Agents tab: one card per roster agent, starting a Session under that agent's preset, above the inbox and the live runs |
+| `src/client/live.tsx` | The two live views of the Agents tab: the roles at work with the steps each one took, and the inbox the chief of staff writes to |
 | `src/client/app.tsx` | The panel: header, search, glossary, tabs and the page of the current route |
 | `src/client/provider.tsx` | What every page reads from its host: copy, calls, navigation, notices, the state poll, and `restart`, which reads the state quickly while dsh-superagent restarts |
 | `src/client/api.ts` | Calls and polls of the management API, typed by `src/app/api.ts`, and the Decision filters of the Eval status |
@@ -426,6 +430,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `tests/bundle-patch.spec.ts` | The bundle's patch, read as DeepSeek Harness reads it, and the agent preset of Executor Sessions it defines |
 | `tests/roles.spec.ts` | Role files: the schema, the toolset every role mounts, and the registry that registers, refuses and retires them |
 | `tests/automation.spec.ts` | Automated tasks: the cadence grammar, the next run, a run that opens a Session, a failed run, pause/resume/delete, and the missed-slot rule |
+| `tests/live.spec.ts` | The role Sessions at work: the steps kept, one report per finished turn, the chief of staff never reporting on itself, and the inbox's order and unread count |
 | `tests/effects.spec.ts` | The effect queue: coalescing, limits, retries with backoff, health and shutdown |
 | `tests/passes.spec.ts` | Passes: one at a time, the ones asked for during a pass run as one after it, and the runtime health a failed pass reports |
 | `tests/outbox.spec.ts` | The Outbox on a running Runtime: messages wait while processing is paused or their Source is not installed |

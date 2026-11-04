@@ -43,6 +43,8 @@ import { Setup } from './setup.ts'
 import { feishuSettings } from '../sources/feishu.ts'
 import { health, type Health, type SourceContext, type SourceHost } from '../sources/host.ts'
 import { Sessions } from './sessions.ts'
+import { LiveRuns, CHIEF_PRESET, type HandoffReport } from './live.ts'
+import { Inbox } from './inbox.ts'
 import { Settings } from './settings.ts'
 import { sourceContextOf, type SourceContextDeps } from './source-context.ts'
 import type { ResourceHost } from './resources.ts'
@@ -76,6 +78,10 @@ export class Runtime extends Service implements SourceHost {
   readonly roles: RoleRegistry
   /** The operator's automated tasks: a role, a prompt, and when to run it. */
   readonly tasks: Automation
+  /** What the role Sessions are doing now, and the report each finished run hands to the chief of staff. */
+  readonly live: LiveRuns
+  /** The operator's inbox, written by `relay_to_user` and read by the panel. */
+  readonly inbox: Inbox
   readonly ready: Promise<void>
   private readonly board = new HealthBoard()
   private readonly runtimeHealth = this.board.claim('runtime', { state: 'starting', detail: '' })
@@ -86,6 +92,8 @@ export class Runtime extends Service implements SourceHost {
   private releaseLock?: () => Promise<void>
   private closingFlag = false
   private stopping?: Promise<void>
+  /** Resolved once, so two reports arriving together open one chief of staff Session. */
+  private chiefSession?: Promise<string>
   private readonly sourceDeps: SourceContextDeps
   private readonly toolHost: MainToolsHost & ExecutorToolsHost
   /** Non-zero while a main-Session tool is executing an Engine command, suppressing self-triggered domain event notices. */
@@ -103,6 +111,7 @@ export class Runtime extends Service implements SourceHost {
     try {
       const report = (error: unknown) => { ctx.logger.warn('dsh-superagent: %s', String(error)) }
       const store = opened = this.store = new Store(join(machine.stateDir, 'orchestrator.sqlite'), report)
+      this.inbox = new Inbox(store)
       const setup = this.setup = new Setup({ context: ctx, machine, lifetime: this.lifetime, restart })
       const deployed = () => setup.configured()
         ? environmentOf({ deployment: setup.deployment, sources: this.sources, settings: store.settings() }) : undefined
@@ -129,6 +138,8 @@ export class Runtime extends Service implements SourceHost {
         lifetime: this.lifetime,
         closing: () => this.closing(), environment,
         tools: (agent, ticket) => ticket ? executorTools(this.toolHost, ticket) : mainTools(this.toolHost, agent) })
+      this.live = new LiveRuns({ context: ctx, lifetime: this.lifetime, closing: () => this.closing(), handoff: report => this.handOff(report),
+        automated: id => this.tasks.list().some(task => task.lastRun?.sessionId === id) })
       const policyChanged: EngineForSettings['policyChanged'] = (from, to, effects) => { this.engine.policyChanged(from, to, effects) }
       this.settings = new Settings({ store, sources, engine: { policyChanged }, health: board, context: ctx, lifetime: this.lifetime, sessions,
         sourceHost: this, setup, requestPass: () => { this.passes.request() } })
@@ -223,6 +234,7 @@ export class Runtime extends Service implements SourceHost {
   private async initialize(): Promise<void> {
     // Register management HTTP routes before setup completes so operators can fix setup problems in the UI.
     this.disposers.push(registerHttp(this.ctx, this.httpHost()))
+    this.live.install()
     if (!await this.setup.run(this.store.settings())) {
       this.runtimeHealth.set({ ...health('paused', 'setupPending'), at: now() })
       return
@@ -238,11 +250,52 @@ export class Runtime extends Service implements SourceHost {
     this.effects.start()
     this.runtimeHealth.set({ state: 'ready', detail: 'Orchestrator is ready', at: now() })
   }
+  /**
+   * Tells the chief of staff that a role finished a run: who, what it was asked, what it did, and the last thing it said. The
+   * chief decides whether any of it is the operator's business and writes that through `relay_to_user`; routine progress
+   * ends there without a message.
+   */
+  private async handOff(report: HandoffReport): Promise<void> {
+    if (this.closing()) return
+    const chief = await this.chief()
+    const tools = report.tools.map(item => `${item.name}×${item.count}`).join(', ')
+    const text = [
+      `[role report] ${report.title}`,
+      `Role: ${report.preset}`,
+      `Session: ${report.sessionId}`,
+      `Started: ${report.startedAt} · ended: ${report.endedAt} · turns: ${report.turns}`,
+      ...(tools ? [`Tools: ${tools}`] : []),
+      '',
+      'Last output:',
+      report.last || '(the run said nothing worth reporting)',
+      '',
+      'If the operator must know what changed, or must decide something, call relay_to_user with a short message in Turkish:',
+      'what happened, what it means, and what they must do. If nothing needs them, reply with one short line and skip the tool.',
+      'Do not relay routine progress.',
+    ].join('\n')
+    await this.sessions.prompt(chief, `handoff:${report.sessionId}:${report.turns}`, text, 'queue')
+  }
+  /** The chief of staff Session: opened on the first report and kept for the next, so its history is the operator's brief. */
+  private chief(): Promise<string> {
+    this.chiefSession ??= this.ensureChief()
+    return this.chiefSession
+  }
+  private async ensureChief(): Promise<string> {
+    const known = this.store.get(KV.runtime.chiefId)
+    if (known) {
+      const resolved = await this.ctx.sessionController.resolveAgent(known as SessionId)
+      if (!('error' in resolved)) return known
+    }
+    const created = await this.ctx.sessionController.create({ cwd: this.machine.stateDir, agentPreset: CHIEF_PRESET })
+    this.store.set(KV.runtime.chiefId, created.sessionId)
+    this.ctx.logger.info('dsh-superagent opened the chief of staff Session %s for role reports', created.sessionId)
+    return created.sessionId
+  }
   private httpHost(): HttpHost {
     const runtime = this
     const { store, sources, prompts, sessions, settings, engine, executor, health, machine, masterId, ready, sourceLinks, setup, passes } = this
     return { store, sources, prompts, sessions, settings, engine, executor, health, machine, masterId, ready, sourceLinks,
-      roles: this.roles, tasks: this.tasks,
+      roles: this.roles, tasks: this.tasks, live: this.live, inbox: this.inbox,
       get deployment() { return setup.deployment },
       get setupProblem() { return setup.problem }, get feishuProblem() { return setup.feishuProblem },
       configured: () => setup.configured(), links: () => runtime.links(), ticketEnvironment: ticket => runtime.ticketEnvironment(ticket),
@@ -261,6 +314,7 @@ export class Runtime extends Service implements SourceHost {
       // The workers' jobs and subagents stop too: their ends would start worker turns without the tool limits released below.
       await this.executor.shutdown()
       this.executor.dispose()
+      this.live.dispose()
       this.sessions.dispose()
       for (const dispose of this.disposers.reverse()) dispose()
       await this.ctx.sessionPersistence.flush()

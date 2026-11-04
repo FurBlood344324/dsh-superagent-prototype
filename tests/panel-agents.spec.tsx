@@ -64,3 +64,42 @@ it('words every roster agent in both languages', () => {
     }
   }
 })
+it('lists a role at work with the steps of the run it expands, and opens that Session', async () => {
+  const run = { id: 'session-keeper', preset: 'superagent-vault-keeper', title: 'Haftalık senkron', status: 'running' as const,
+    startedAt: '2026-11-04T08:40:00Z', updatedAt: '2026-11-04T08:42:00Z', turn: 1, steps: 2, last: 'Grafı ölçtüm: 412 düğüm.' }
+  server.runs = [run]
+  server.runFeeds = { 'session-keeper': { ...run, feed: [
+    { at: '2026-11-04T08:41:00Z', kind: 'user', text: 'Briefi oku' },
+    { at: '2026-11-04T08:42:00Z', kind: 'say', text: 'Grafı ölçtüm: 412 düğüm.' }] } }
+  await mount(en)
+  await click('Agents')
+  expect(text()).toContain('Haftalık senkron')
+  expect(text()).toContain('Running')
+  expect(text()).toContain('2 steps')
+  // The feed is fetched only for the run the operator expanded.
+  expect(all('.dt-step')).toHaveLength(0)
+  await click(all('.dt-run-head')[0]!)
+  expect(all('.dt-step')).toHaveLength(2)
+  expect(text()).toContain('412')
+  await click(all('.dt-run-foot button')[0]!)
+  expect(server.opened).toEqual(['session-keeper'])
+  server.runs = []
+  server.runFeeds = {}
+  server.opened = []
+})
+
+it('shows the inbox the chief of staff writes to and marks a message read when it is opened', async () => {
+  server.inbox = { items: [{ id: 'inbox-1', at: '2026-11-04T09:00:00Z', from: 'superagent-chief-of-staff',
+    title: 'Haftalık senkron bitti', text: 'İki not bağlandı; karar gereken bir şey yok.', sessionId: 'session-keeper', read: false }],
+  unread: 1 }
+  await mount(en)
+  await click('Agents')
+  expect(text()).toContain('Haftalık senkron bitti')
+  expect(text()).toContain('1 unread')
+  await click(all('.dt-inbox-head')[0]!)
+  expect(server.opened).toEqual(['session-keeper'])
+  expect(server.inbox.items[0]!.read).toBe(true)
+  expect(server.inbox.unread).toBe(0)
+  server.inbox = { items: [], unread: 0 }
+  server.opened = []
+})

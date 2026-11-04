@@ -3,6 +3,7 @@
  * Readers and writers refer to a record by its entry here so each key is spelled once with its value type.
  */
 import type { Task } from './core/tasks.ts'
+import type { InboxItem } from './app/inbox.ts'
 import type { PromptVersion } from './app/prompts.ts'
 import type { SettingsVersion } from './app/store.ts'
 import type { SettingsSave } from './policy.ts'
@@ -30,12 +31,14 @@ export const KV = {
   prompts: { revision: record<number>('prompt-revision'), version: family<PromptVersion, [revision: number]>('prompt-version:'),
     /** The built-in text of a prompt part an override was edited from, by its `base`, which shows what an upgrade changed. */
     builtIn: family<string, [base: string]>('prompt-built-in:') },
-  /** Runtime: the main Session's ID. */
-  runtime: { masterId: record<string>('master-id') },
+  /** Runtime: the main Session's ID, and the chief of staff's Session, which receives the role runs' reports. */
+  runtime: { masterId: record<string>('master-id'), chiefId: record<string>('chief-id') },
   /** Sessions: prompt revisions each Session has worked under, ordered oldest first; the last entry (`.at(-1)`) is its active revision. */
   sessions: { prompts: family<number[], [session: string]>('session-prompts:') },
   /** Automated tasks: one record per task, keyed by its id, written by the automation scheduler. */
   tasks: { entry: family<Task, [id: string]>('task:') },
+  /** Inbox: one record per message the relay tool decided the operator must read. */
+  inbox: { item: family<InboxItem, [id: string]>('inbox-item:') },
   /** Schema 11 migration: legacy main-Session queues imported into the effect table. */
   queues: { relays: record<{ id: string; text: string }[]>('relay-queue'), unsubscribed: record<string[]>('subscription-results'),
     prompts: record<number | null>('prompt-notification'), settings: record<number | null>('settings-notification') },

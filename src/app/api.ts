@@ -7,6 +7,8 @@ import type { OverviewView } from './views/overview.ts'
 import type { SettingsView } from './views/settings.ts'
 import type { RoleListView } from './roles.ts'
 import type { TaskView } from '../core/tasks.ts'
+import type { RunDetailView, RunView } from './live.ts'
+import type { InboxView } from './inbox.ts'
 import type { SourceStatusView } from './views/sources.ts'
 import type { DecisionListView, SearchView, ThreadDetailView, ThreadListView } from './views/threads.ts'
 import type { TicketListView } from './views/tickets.ts'
@@ -45,6 +47,10 @@ export interface Api {
   'GET roles': { response: RoleListView }
   'GET tasks': { response: { tasks: TaskView[] } }
   'POST tasks/:id/control': { body: { action: 'pause' | 'resume' | 'run' | 'delete' }; response: TaskView | { deleted: string } }
+  'GET runs': { response: { runs: RunView[] } }
+  'GET runs/:id': { response: RunDetailView }
+  'GET inbox': { response: InboxView }
+  'POST inbox/:id/read': { response: { read: boolean } }
   'GET prompts': { query?: { revision?: number; offset?: number }; response: PromptsView }
   'PUT prompts': { body: { config: PromptConfig; baseRevision: number }; response: { revision: number; context_delivery: Delivery } }
   'POST prompts/preview': { body: PromptConfig; response: ReturnType<Prompts['preview']> }

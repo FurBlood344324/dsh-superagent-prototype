@@ -6,6 +6,7 @@
 import type { CSSProperties } from 'react'
 import { ROSTER } from '../agents.ts'
 import { usePoll } from './api.ts'
+import { InboxPanel, LivePanel } from './live.tsx'
 import { Button, Icon } from './controls.tsx'
 import type { DshSuperagentKey } from './locales.ts'
 import { usePanel } from './provider.tsx'
@@ -28,6 +29,8 @@ export function AgentsPage({ startAgent }: { startAgent: (preset: string) => voi
   const tasks = scheduled?.tasks ?? []
   return <section className="dt-agents" aria-label={t('tab.agents')}>
     <p className="dt-hint">{t('agentsIntro')}</p>
+    <InboxPanel />
+    <LivePanel />
     <ul className="dt-agent-grid">
       {ROSTER.map(agent => <li key={agent.id} className="dt-agent-card">
         <div className="dt-agent-head">

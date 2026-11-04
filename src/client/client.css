@@ -195,6 +195,28 @@ div.dt-preview-head { color: var(--dsw-alias-label-secondary); }
 .dt-agent-role { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-tertiary); }
 .dt-agent-blurb { margin: 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-secondary); }
 .dt-agent-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+/* Live runs and the chief of staff's inbox, both in the Agents tab. */
+.dt-live, .dt-inbox { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dt-run { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: 12px; }
+.dt-run-head { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.dt-run-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--dsw-alias-state-idle-primary); }
+.dt-run-dot.running { background: var(--dsw-alias-state-success-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-success-primary) 18%, transparent); }
+.dt-run-title { font-size: 14px; line-height: 20px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-run-meta { flex: none; margin-left: auto; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-caption); font-variant-numeric: tabular-nums; }
+.dt-run-last { margin: 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
+.dt-run-feed { list-style: none; margin: 0; padding: 8px 0 0; border-top: 0.5px solid var(--dsw-alias-border-l3); display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow: auto; }
+.dt-step { display: flex; gap: 8px; min-width: 0; font-size: 12px; line-height: 18px; }
+.dt-step-when { flex: none; color: var(--dsw-alias-label-caption); font-variant-numeric: tabular-nums; }
+.dt-step-text { min-width: 0; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
+.dt-step-user .dt-step-text { color: var(--dsw-alias-label-primary); }
+.dt-step-tool .dt-step-text { color: var(--dsw-alias-label-tertiary); font-family: var(--dsh-font-mono, ui-monospace, SFMono-Regular, monospace); }
+.dt-run-foot { display: flex; gap: 8px; }
+.dt-inbox-item { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 12px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: 12px; }
+.dt-inbox-item.unread { border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l3)); background: color-mix(in srgb, var(--dsw-alias-brand-primary) 4%, transparent); }
+.dt-inbox-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.dt-inbox-title { font-size: 14px; line-height: 20px; font-weight: 600; }
+.dt-inbox-meta { flex: none; margin-left: auto; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-caption); }
+.dt-inbox-text { margin: 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-secondary); white-space: pre-wrap; overflow-wrap: anywhere; }
 /* Local UI primitive styles (see controls.tsx). */
 .dt-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: none; border-radius: 18px; cursor: pointer; font: inherit; font-size: 14px; line-height: 22px; color: var(--dsw-alias-label-primary); background: transparent; padding: 0 14px; white-space: nowrap; }
 .dt-btn:disabled { cursor: not-allowed; opacity: 0.4; }
