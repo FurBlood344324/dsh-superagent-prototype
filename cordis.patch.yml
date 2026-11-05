@@ -296,11 +296,46 @@
                   provider: spawn
                   toolName: subagent
                   modelSelectionSettings: true
-                  allowedAgentPresets:
-                    - superagent-researcher
-                    - superagent-engineer
-                    - superagent-editor
-                    - superagent-role-maker
+                  # The model's enum is fixed when this preset mounts, so it is composed here: the shipped roles, then every role
+                  # card the deployment's roles folder holds. The state directory comes from the profile's own configuration, so a
+                  # role needs no patch edit and no per-machine list. A card that would not load is not offered.
+                  allowedAgentPresets: !!js |
+                    (() => {
+                      // The four roles this patch declares. Every other role is a card in the deployment's roles folder.
+                      const shipped = ['superagent-researcher', 'superagent-engineer', 'superagent-editor', 'superagent-role-maker']
+                      // The Host tree this row is mounted into: the plugin entry whose config names the state directory, and the presets already declared.
+                      const loader = ctx.get('loader')
+                      const entries = loader === undefined ? [] : [...loader.entries()]
+                      const stateDir = entries.find(row => row.options.name === 'dsh-superagent')?.options?.config?.stateDir
+                      if (typeof stateDir !== 'string' || stateDir === '') return shipped
+                      const fs = process.getBuiltinModule('node:fs')
+                      const path = process.getBuiltinModule('node:path')
+                      // A card that names a preset the patch already declares is refused by the role registry, so it is not offered here.
+                      const declared = new Set(entries.filter(row => row.options.name === '@deepseek-ai/dsh-agent-preset')
+                        .map(row => row.options?.config?.id))
+                      const folder = path.join(stateDir, 'roles')
+                      // The registry's own rule for a loadable card (src/roles.ts); a card it would refuse is never advertised.
+                      const pattern = /^superagent-[a-z0-9]+(?:-[a-z0-9]+)*$/
+                      const fields = ['id', 'name', 'description', 'persona', 'icon', 'hue']
+                      const usable = role => role !== null && typeof role === 'object' && !Array.isArray(role)
+                        && Object.keys(role).every(key => fields.includes(key))
+                        && typeof role.id === 'string' && pattern.test(role.id)
+                        && typeof role.name === 'string' && role.name.length >= 1 && role.name.length <= 60
+                        && typeof role.description === 'string' && role.description.length >= 1 && role.description.length <= 200
+                        && typeof role.persona === 'string' && role.persona.length >= 120 && role.persona.length <= 4000
+                        && (role.icon === undefined || ['briefcase', 'search', 'code', 'pen'].includes(role.icon))
+                        && (role.hue === undefined || (Number.isInteger(role.hue) && role.hue >= 0 && role.hue <= 359))
+                      let names = []
+                      try { names = fs.readdirSync(folder).filter(name => name.endsWith('.json')).sort() } catch { return shipped }
+                      const choices = [...shipped]
+                      for (const name of names) {
+                        let role
+                        try { role = JSON.parse(fs.readFileSync(path.join(folder, name), 'utf8')) } catch { continue }
+                        if (!usable(role) || choices.includes(role.id) || declared.has(role.id)) continue
+                        choices.push(role.id)
+                      }
+                      return choices
+                    })()
               - id: tool-subagent-fork
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:

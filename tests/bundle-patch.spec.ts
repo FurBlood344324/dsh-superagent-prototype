@@ -1,11 +1,17 @@
 /** The bundle's patch, read with the entry-list dialect DSH reads bundle patches with, and the agent preset it defines. */
 import { readFileSync } from 'node:fs'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, it } from 'vitest'
+import { afterEach, expect, it } from 'vitest'
 import { ROSTER } from '../src/agents.ts'
 import { ROLE_TOOLSET } from '../src/roles.ts'
+import { RoleRegistry } from '../src/app/roles.ts'
 import { ROUTER_PRESET, WORKER_PRESET } from '../src/app/sessions.ts'
+
+const dirs: string[] = []
+afterEach(async () => { for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true }) })
 
 interface Row { id?: string; name: string; disabled?: unknown; config?: Record<string, unknown> & { plugins?: Row[] } | Row[] }
 /** The patch as DSH reads it: Cordis's include plugin parses `!!js` scalars, and applies the inserts to an entry list. */
@@ -87,10 +93,63 @@ it('declares one role preset per roster agent, each with its own persona', async
     expect(persona?.prefix, agent.id).toContain('Answer in Turkish')
     expect(plugins.map(row => row.name), agent.id).toContain('@deepseek-ai/dsh-tool-skill')
   }
-  // The chief of staff may hand a step to any other role by preset id.
+})
+
+/** A role card the registry accepts; a test overrides one field to make it a card the registry refuses. */
+const PERSONA = 'You are the operator analyst. You read the numbers before you read the story, you say what the evidence' +
+  ' supports and what it does not, and you end with the one decision the numbers point at.'
+const roleFile = (id: string, over: Record<string, unknown> = {}): string =>
+  JSON.stringify({ id, name: 'Analyst', description: 'Turns numbers into one decision.', persona: PERSONA, ...over })
+
+it('offers the chief every role preset the deployment installed, and only the ones that load', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'superagent-choices-'))
+  dirs.push(dir)
+  const roles = join(dir, 'roles')
+  await mkdir(roles)
+  await writeFile(join(roles, 'analyst.json'), roleFile('superagent-analyst'))
+  await writeFile(join(roles, 'broken.json'), roleFile('superagent-broken', { persona: 'too short' }))
+  await writeFile(join(roles, 'engineer.json'), roleFile('superagent-engineer'))
+  await writeFile(join(roles, 'extra.json'), roleFile('superagent-extra'))
+  await writeFile(join(roles, 'README.md'), 'not a role card')
+
+  const rows = await patched()
   const chief = flat(presetOf(rows, 'superagent-chief-of-staff').plugins)
-  const subagent = chief.find(row => row.name === '@deepseek-ai/dsh-tool-subagent')?.config as { allowedAgentPresets?: string[] }
-  expect(subagent.allowedAgentPresets).toEqual(ROSTER.filter(agent => agent.key !== 'chiefOfStaff').map(agent => agent.id))
+  const subagent = chief.find(row => row.name === '@deepseek-ai/dsh-tool-subagent' && row.id === 'tool-subagent')?.config as {
+    allowedAgentPresets?: string[] | { __jsExpr: string } } | undefined
+  // Delegation keeps its provider, tool name and model choice; the preset enum is the only thing that grows.
+  expect(Object.keys(subagent ?? {}).sort()).toEqual(['allowedAgentPresets', 'modelSelectionSettings', 'provider', 'toolName'])
+
+  // The Host tree a preset row's expression is evaluated against: the plugin entry that names the state directory, and the presets
+  // this patch declares. Both are read from the composed configuration the Loader holds when the preset mounts.
+  const host = {
+    *entries() {
+      yield { options: { id: 'dsh-superagent', name: 'dsh-superagent', config: { stateDir: dir } } }
+      for (const agent of ROSTER) {
+        yield { options: { id: 'preset-' + agent.id, name: '@deepseek-ai/dsh-agent-preset', config: { id: agent.id } } }
+      }
+      yield { options: { id: 'preset-superagent-extra', name: '@deepseek-ai/dsh-agent-preset', config: { id: 'superagent-extra' } } }
+    },
+  }
+  const cordis = createRequire(createRequire(import.meta.url).resolve('@deepseek-ai/cordis/package.json'))
+  const { evaluate } = await import(cordis.resolve('@deepseek-ai/cordis-plugin-loader')) as {
+    evaluate(ctx: unknown, expression: string): unknown }
+  const configured = subagent?.allowedAgentPresets
+  const choices = configured === undefined ? [] : Array.isArray(configured) ? configured
+    : evaluate({ get: (name: string) => name === 'loader' ? host : undefined }, configured.__jsExpr) as string[]
+
+  const shipped = ROSTER.filter(agent => agent.key !== 'chiefOfStaff').map(agent => agent.id)
+  for (const id of shipped) expect(choices).toContain(id)
+  expect(choices).not.toContain('superagent-chief-of-staff')
+  // The same folder the registry reads: it registers the analyst and refuses the broken card, the duplicate id and the id the patch
+  // already declares. The enum is exactly the shipped roster plus those registered roles, so the two sources cannot drift.
+  const presets = { list: async () => [...shipped, 'superagent-extra'].map(id => ({ id })), register: async () => async () => {} }
+  const registry = new RoleRegistry({ get: name => name === 'agentPresets' ? presets : undefined,
+    logger: { warn: () => {}, info: () => {} } }, roles)
+  await registry.reload()
+  expect(registry.view().roles.map(role => role.id)).toEqual(['superagent-analyst'])
+  expect(choices).toEqual([...shipped, ...registry.view().roles.map(role => role.id)])
+  // What the model is offered, in order: the four shipped roles, then the card the folder holds, and nothing else.
+  expect(choices).toEqual(['superagent-researcher', 'superagent-engineer', 'superagent-editor', 'superagent-role-maker', 'superagent-analyst'])
 })
 
 /** The rows each role preset should carry, in order: its persona, then the shared toolset the registry also mounts. */
