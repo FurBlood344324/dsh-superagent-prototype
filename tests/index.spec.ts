@@ -7,6 +7,10 @@ const runtimes = vi.hoisted(() => [] as { machine: Machine; restart: () => void 
 vi.mock('../src/app/runtime.ts', () => ({ Runtime: class {
   ready = Promise.resolve()
   constructor(_ctx: unknown, readonly machine: Machine, readonly restart: () => void) { runtimes.push(this) }
+  // The role registry reads a folder and registers presets; the index test only cares that the plugin wires its lifecycle.
+  readonly roles = { start: async () => {}, stop: async () => {} }
+  // The task scheduler arms a timer and starts Sessions; the index test only checks that the plugin starts it.
+  readonly tasks = { start: () => {}, stop: () => {} }
   configured() { return true }
   async stop() {}
 } }))

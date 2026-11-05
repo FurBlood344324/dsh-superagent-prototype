@@ -41,8 +41,12 @@ function Mounted({ ctx, t }: { ctx: ClientContext; t: T }) {
       throw error
     }
   }, [ctx, t])
+  const startAgent = useCallback((preset: string) => {
+    // The Host reads `agentPreset` when it starts a Session; the Client type this bundle compiled against predates the field.
+    ctx.uiWorkspace.startSession(undefined, { agentPreset: preset } as never)
+  }, [ctx])
   const form = usePageForm(ctx.get('configForms')?.get<Record<string, unknown>>(ENTRY))
-  return <App t={t} openSession={openSession} deploymentForm={form} />
+  return <App t={t} openSession={openSession} startAgent={startAgent} deploymentForm={form} />
 }
 
 export const inject = ['slots', 'locale', 'sessions', 'uiWorkspace']

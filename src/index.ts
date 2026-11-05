@@ -2,6 +2,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-settings'
 import { Runtime } from './app/runtime.ts'
+import { relayTool } from './tools/relay.ts'
 import { Config, machineOf, type DeploymentConfig } from './deployment.ts'
 
 export const name = 'dsh-superagent'
@@ -21,6 +22,20 @@ export async function apply(ctx: Context, config: DeploymentConfig): Promise<voi
   const runtime = new Runtime(ctx, machine, restart)
   ctx.effect(() => async () => { await runtime.stop() })
   await runtime.ready
+  // The relay tool answers every Session in the profile: the chief of staff hands the operator's attention here, and a role
+  // that finds something urgent can flag it without waiting for a report.
+  ctx.effect(() => ctx.tools.register(relayTool(() => runtime.inbox)))
+  // Automated tasks do not wait for setup: a role on a schedule needs no repository, and the tools start working with the panel.
+  runtime.tasks.start()
+  // Roles live in the state directory, not in the patch: the Role Maker writes one file and the agent-preset service takes
+  // it while the Host runs, so a new role needs neither a rebuild nor a restart.
+  ;(ctx as unknown as { inject(names: string[], callback: (child: { effect(run: () => () => void): void }) => void): void })
+    .inject(['agentPresets'], child => {
+      child.effect(() => {
+        void runtime.roles.start()
+        return () => { void runtime.roles.stop() }
+      })
+    })
   ctx.logger.info(runtime.configured() ? 'dsh-superagent ready; the Superagent sidebar entry opens the management panel' : `dsh-superagent is waiting for setup: ${runtime.setupProblem?.detail ?? ''}`)
 }
 export type { Deployment, DeploymentConfig } from './deployment.ts'

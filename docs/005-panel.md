@@ -12,11 +12,12 @@ Opening the panel answers three questions, in this order:
 
 ## Tabs
 
-The tabs follow the workflow: **Overview**, **Source**, **Trigger**, **Eval**, **Execution**, and **Settings**. Until repository and account setup succeeds, Overview shows what is missing and links to the relevant setting.
+The tabs follow the workflow: **Overview**, **Agents**, **Source**, **Trigger**, **Eval**, **Execution**, and **Settings**. Until repository and account setup succeeds, Overview shows what is missing and links to the relevant setting.
 
 | Tab | Shows |
 | --- | --- |
 | Overview | Tickets needing action, system problems, activity counts for the last 24 hours, and Executor load. Each block links to its detailed page |
+| Agents | The operator's standing roles: chief of staff, researcher, engineer, editor and the role maker that designs new ones. Each card starts a new Session under that role's agent preset, so the role can be talked to directly, and the same presets are offered when a Session starts anywhere else. Cards below the roster are roles the Role Maker wrote: the Host registers them from JSON files in its roles folder while it runs, and the tab asks the Host for them, so a new role needs no rebuild and no restart. Below them, the automated tasks each role runs on its own schedule: the card shows the cadence, the next run in local time and the run count, and pauses or deletes a task without a chat round. Every role carries the toolset of the shipped `standard` preset (shell, files, search, jobs, schedules, goals, plan mode, subagents, the workflow engine, web and present) minus the two plugin admin rows, plus the profile's PTC row, and the host's own tools (vault memory, bulk_read, cordis inspect) reach it like any other Session. Above the roster, the tab opens with what needs the operator: the **inbox** the chief of staff writes to through `relay_to_user`, unread first, one click to open the Session a message is about; and **at work**, the role Sessions running now, each with its status, its step count, the last thing it did, a feed of the steps it took, and a button that opens it. A finished automated run is handed to the chief of staff, which writes to the inbox only when the operator must know or decide something |
 | Source | Source state, setup problems and non-zero counts. Filtered Triggers and dropped messages cover the same 24-hour window as Overview |
 | Trigger | Threads filtered by Subscribed, Evaluating, New Triggers in 24 h, or All Threads. Each Thread shows its Triggers newest first, Decisions and Subscriptions |
 | Eval | Decisions with their reason and matched rules |

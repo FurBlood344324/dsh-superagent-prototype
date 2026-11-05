@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
+import { ROSTER } from '../src/agents.ts'
+import { ROLE_TOOLSET } from '../src/roles.ts'
 import { ROUTER_PRESET, WORKER_PRESET } from '../src/app/sessions.ts'
 
 interface Row { id?: string; name: string; disabled?: unknown; config?: Record<string, unknown> & { plugins?: Row[] } | Row[] }
@@ -29,7 +31,8 @@ const presetOf = (rows: readonly Row[], id: string) => rows.map(row => row.confi
 it('defines the worker preset Executor Sessions run under, with a shell that moves long commands to the background', async () => {
   const rows = await patched()
   expect(rows.map(row => row.id)).toEqual(['dsh-superagent', 'dsh-superagent-github', 'dsh-superagent-feishu', 'dsh-superagent-worker-preset',
-    'dsh-superagent-router-preset'])
+    'dsh-superagent-router-preset', 'preset-superagent-chief-of-staff', 'preset-superagent-researcher', 'preset-superagent-engineer',
+    'preset-superagent-editor', 'preset-superagent-role-maker'])
   const preset = presetOf(rows, WORKER_PRESET)
   expect(preset.id).toBe(WORKER_PRESET)
   const plugins = flat(preset.plugins)
@@ -70,4 +73,42 @@ it('defines the router preset the main Session runs under: the worker\'s 5-secon
     '@deepseek-ai/dsh-tool-todo', '@deepseek-ai/dsh-tool-ask-user', '@deepseek-ai/dsh-tool-present', '@deepseek-ai/dsh-plan-mode',
     '@deepseek-ai/dsh-plugin-manager/tools', '@deepseek-ai/dsh-plugin-market/tools', '@deepseek-ai/dsh-tool-schedule', '@deepseek-ai/dsh-tool-goal',
     '@deepseek-ai/dsh-command-goal', '@deepseek-ai/dsh-tool-workflow', '@deepseek-ai/dsh-workflow-ptc']) expect(names, name).not.toContain(name)
+})
+
+
+it('declares one role preset per roster agent, each with its own persona', async () => {
+  const rows = await patched()
+  for (const agent of ROSTER) {
+    const preset = presetOf(rows, agent.id)
+    expect(preset.id, agent.id).toBe(agent.id)
+    const plugins = flat(preset.plugins)
+    const persona = plugins.find(row => row.name === '@deepseek-ai/dsh-persona')?.config as { prefix?: string } | undefined
+    // Every role agent carries the operator's language, so a Session does not answer in the harness's own.
+    expect(persona?.prefix, agent.id).toContain('Answer in Turkish')
+    expect(plugins.map(row => row.name), agent.id).toContain('@deepseek-ai/dsh-tool-skill')
+  }
+  // The chief of staff may hand a step to any other role by preset id.
+  const chief = flat(presetOf(rows, 'superagent-chief-of-staff').plugins)
+  const subagent = chief.find(row => row.name === '@deepseek-ai/dsh-tool-subagent')?.config as { allowedAgentPresets?: string[] }
+  expect(subagent.allowedAgentPresets).toEqual(ROSTER.filter(agent => agent.key !== 'chiefOfStaff').map(agent => agent.id))
+})
+
+/** The rows each role preset should carry, in order: its persona, then the shared toolset the registry also mounts. */
+const expectedToolset = ['persona', ...flat(ROLE_TOOLSET as never).map(row => row.id)]
+
+it('gives every role preset the working toolset of the shipped standard preset', async () => {
+  const rows = await patched()
+  for (const agent of ROSTER) {
+    // Parity is the point: a role agent that lacks the workflow engine, the fork, the schedules or the goals cannot do the work
+    // the operator just picked it for. Host-scope tools (vault memory, bulk_read, cordis inspect) arrive outside the preset.
+    expect(flat(presetOf(rows, agent.id).plugins).map(row => row.id), agent.id).toEqual(expectedToolset)
+  }
+  // The two plugin admin rows stay out: `standard` disables them, and reconfiguring the profile is not a role's job.
+  const chief = flat(presetOf(rows, 'superagent-chief-of-staff').plugins)
+  expect(chief.map(row => row.name)).not.toContain('@deepseek-ai/dsh-plugin-manager/tools')
+  expect(chief.map(row => row.name)).not.toContain('@deepseek-ai/dsh-plugin-market/tools')
+  // The spawn tool offers a model choice, and the workflow engine is the spawn provider, so scale-out does not fork the caller's context.
+  const spawn = chief.find(row => row.name === '@deepseek-ai/dsh-tool-subagent' && row.id === 'tool-subagent')
+  expect(spawn?.config).toMatchObject({ provider: 'spawn', modelSelectionSettings: true })
+  expect(chief.find(row => row.id === 'workflow-ptc')?.config).toEqual({ provider: 'spawn' })
 })

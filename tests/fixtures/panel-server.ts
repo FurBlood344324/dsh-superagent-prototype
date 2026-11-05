@@ -106,6 +106,21 @@ export interface PanelServer {
   pending: number
   form?: ConfigForm<Record<string, unknown>> | undefined
   opened: string[]
+  /** Agent presets the Agents tab asked the Host to start a Session under. */
+  started: string[]
+  /** Task controls the panel asked for, in order. */
+  controlled: { id: string; action: string }[]
+  /** Roles the Role Maker wrote, as the roles route reports them. */
+  roles: ApiResponse<'GET roles'>['roles']
+  /** Files the role registry refused, with their reason. */
+  rolesProblems: ApiResponse<'GET roles'>['problems']
+  /** Automated tasks the Host runs, as the tasks route reports them. */
+  tasks: ApiResponse<'GET tasks'>['tasks']
+  /** Role Sessions the Agents tab watches, and the feed each one answers with when expanded. */
+  runs: ApiResponse<'GET runs'>['runs']
+  runFeeds: Record<string, ApiResponse<'GET runs/:id'>>
+  /** The operator's inbox as the chief of staff left it. */
+  inbox: ApiResponse<'GET inbox'>
   dropped: DroppedReply[]
   failing: Extract<Problem, { kind: 'outgoing' }>['outgoing'][]
 }
@@ -247,7 +262,7 @@ function initial(): PanelServer {
     en: 'Feishu message' } }
   const defaults = { revision: 0, previousRevision: null, savedAt: '', source: 'defaults' }
   return {
-    health: {}, down: false, pending: 0, opened: [], requests: [], misuse: [], queued: new Set(), dropped: [], failing: [],
+    health: {}, down: false, pending: 0, opened: [], started: [], roles: [], rolesProblems: [], tasks: [], runs: [], runFeeds: {}, inbox: { items: [], unread: 0 }, controlled: [], requests: [], misuse: [], queued: new Set(), dropped: [], failing: [],
     setup: { machine: MACHINE, problem: null, feishuProblem: null,
       accounts: { repository: 'acme/widgets', agent: 'agent-bot', feishu: { appId: 'cli_bot', brand: 'feishu', botId: 'ou_bot',
         name: 'Widgets Bot' } } },
@@ -372,6 +387,23 @@ const ROUTES: { [K in keyof Api]: Route<K> } = {
   'GET models': { answer: () => ({ default: { provider: 'host', model: 'default' }, routableProviders: [], failures: [],
     groups: [{ id: 'worker-provider', name: 'Worker provider', models: [{ id: 'worker-model', name: 'Worker model',
       reasoning: { efforts: [{ id: 'high', name: 'High' }] } }] }] }) },
+  'GET roles': { answer: () => ({ dir: '/state/roles', roles: server.roles, problems: server.rolesProblems }) },
+  'GET tasks': { answer: () => ({ tasks: server.tasks }) },
+  'POST tasks/:id/control': { body: true, answer: ({ params, body }) => {
+    server.controlled.push({ id: params.id, action: (body as { action: 'pause' | 'resume' | 'run' | 'delete' }).action })
+    const task = server.tasks.find(item => item.id === params.id)!
+    if (body.action === 'delete') { server.tasks = server.tasks.filter(item => item.id !== params.id); return { deleted: params.id } }
+    return { ...task, enabled: body.action === 'resume' ? true : body.action === 'pause' ? false : task.enabled }
+  } },
+  'GET runs': { answer: () => ({ runs: server.runs }) },
+  'GET runs/:id': { answer: ({ params }) => server.runFeeds[params.id] ?? refuse(404, 'Run not found') },
+  'GET inbox': { answer: () => server.inbox },
+  'POST inbox/:id/read': { answer: ({ params }) => {
+    if (!server.inbox.items.some(item => item.id === params.id)) return refuse(404, 'Message not found')
+    const items = server.inbox.items.map(item => item.id === params.id ? { ...item, read: true } : item)
+    server.inbox = { items, unread: items.filter(item => !item.read).length }
+    return { read: true }
+  } },
   'GET prompts': { query: ['revision', 'offset'], answer: () => server.prompts },
   'PUT prompts': { body: true, answer: ({ body }) => {
     const { revision } = server.prompts
